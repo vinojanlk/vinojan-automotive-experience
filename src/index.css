@@ -1,0 +1,41 @@
+/* ─── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Root ───────────────────────────────────────────────────── */
+html {
+  /* Prevent GSAP scroll conflicts */
+  scroll-behavior: auto;
+}
+
+body {
+  background: #050507;
+  color: #ffffff;
+  font-family: 'Space Grotesk', -apple-system, 'Helvetica Neue', Helvetica, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbar — scroll still functions */
+html::-webkit-scrollbar { width: 0; }
+html { scrollbar-width: none; }
+
+canvas { display: block; }
+
+#root {
+  width: 100%;
+}
+
+/* ─── Sticky viewport ────────────────────────────────────────── */
+#sticky-viewport {
+  position: sticky;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
