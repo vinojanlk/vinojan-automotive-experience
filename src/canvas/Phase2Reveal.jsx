@@ -43,8 +43,9 @@ export default function Phase2Reveal({ scrollProgress }) {
     if (carGroup.current) {
       carGroup.current.position.set(0, floorOffset, carZ)
     }
-    // Cover stays at origin (with same floor offset for visual consistency)
+    // Cover: visible before reveal, hidden once reveal begins
     if (coverGroup.current) {
+      coverGroup.current.visible = p < 0.45
       coverGroup.current.position.set(0, floorOffset, 0)
     }
   })
