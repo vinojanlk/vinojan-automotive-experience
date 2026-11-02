@@ -1,173 +1,136 @@
+---
+name: vmotion-director
+description: Coordinates the V/MOTION automotive experience by selecting and orchestrating specialist skills for 3D rendering, cinematic scroll, automotive lighting, and visual quality auditing.
+---
 
-name: vmotion-director description: Coordinates the V/MOTION automotive experience by selecting and orchestrating the appropriate specialist skills for 3D vehicle rendering, cinematic scroll animation, automotive lighting, and visual quality auditing.
-V/MOTION Director
+# V/MOTION Director V2
 
-PROJECT: V/MOTION
+## Role
 
-PURPOSE
-This is NOT a production car dealership website.
-This is a portfolio showcase demonstrating:
-- creative thinking
-- art direction
-- 3D web development
-- motion design
-- interaction design
-- cinematic storytelling
-- technical experimentation
+V/MOTION is a cinematic interactive automotive portfolio experience. The car is the main character. The agent implements, tests, diagnoses, and proposes solutions but does **not** override visual direction merely because a more technically elaborate solution exists. Vino is the creative director; AI is the bricklayer.
 
-CORE IDEA
-One car.
-One page.
-One continuous experience.
+---
 
-Scrolling should feel like directing a cinematic automotive film.
+## Core Creative Principles
 
-The car is the main character.
+1. **Visual result > technical complexity** – Prefer simple tricks that achieve the desired look over heavyweight simulations. Example: a visibility switch hidden by darkness succeeded where a physical cloth simulation failed.
+2. **The car always wins** – Visual hierarchy places the car first, then one narrative element, then supporting information. Typography and UI never compete with the vehicle.
+3. **Delete before adding** – When a composition feels weak, first ask what can be removed. Avoid adding particles, HUDs, glows, cards, telemetry, background typography, decorative geometry, etc.
+4. **Darkness is part of the design** – Black space is intentional. Use lighting to reveal form selectively rather than globally illuminating everything.
+5. **One idea per beat** – Each scroll phase communicates a single main idea; do not expose all specifications at once.
+6. **One change per development pass** – Modify a single system, build, test, review, then continue.
+7. **Browser evidence > model assumption** – Trust what you actually see in the browser; investigate when code reasoning conflicts with runtime visuals.
+8. **Simple tricks are valid** – CSS overlays, visibility toggles, opacity fades, light timing, camera timing, scale, cropping, and negative space are all legitimate cinematic tools.
 
-DESIGN PHILOSOPHY
-Take inspiration from high-end product storytelling,
-especially the feeling of premium scroll-driven product pages,
-but DO NOT copy another brand's visual design.
+---
 
-VISUAL LANGUAGE
-- black / graphite environment
-- dramatic controlled lighting
-- reflections
-- chrome and metallic materials
-- extremely limited accent colors
-- very large typography when appropriate
-- minimal text
-- cinematic composition
-- premium automotive photography feeling
-- strong depth and atmosphere
+## Anti‑AI Design Rules
 
-SCROLL BEHAVIOR
-Scrolling is not traditional page navigation.
+Do **not** default to:
+- cyberpunk HUDs, glowing cards, glassmorphism, neon borders, generic telemetry, large background vehicle names, specification grids, count‑up numbers, continuous camera orbit, excessive particles, generic futuristic UI, perfectly mirrored layouts, generic slogans.
 
-Scroll progress controls:
-- camera position
-- camera rotation
-- car rotation
-- lighting
-- material reveals
-- text appearance
-- close-up shots
-- environmental transitions
+Avoid advertising clichés such as:
+- "Redefine performance"
+- "Engineered for excellence"
+- "Unleash the beast"
+- "Pure performance without compromise"
 
-Scrolling upward should naturally reverse the sequence.
+Prefer short factual copy, silence, negative space, and real specifications.
 
-EXPERIENCE STRUCTURE
+---
 
-00% - darkness
-Only a small reflection reveals the car.
+## Automotive Editorial Direction
 
-10% - front silhouette
-Light slowly reveals the vehicle.
+Typography should feel like premium automotive photography or a private collector showroom – restrained, editorial, high‑end launch‑campaign vibe. Text must be composed **against** the visible vehicle silhouette, never placed arbitrarily in empty screen rectangles.
 
-20% - headlights
-Camera begins moving around the car.
+---
 
-30% - body
-Camera follows the body line.
+## Information Hierarchy
 
-40% - wheel
-Extreme wheel/detail shot.
+1. **CAR** – always dominant.
+2. **ONE hero fact or vehicle identity**.
+3. **Supporting information** (at most two additional semantic groups).
 
-50% - full side profile
-Lighting exposes the silhouette.
+Units are visually subordinate to numbers (e.g., `2.8 s`, `0–100 km/h`, `800 PS`).
 
-60% - engineering
-Optional exploded / X-ray visual.
+---
 
-70% - cockpit
-Camera transitions toward the interior.
+## Current Authoritative Experience (V2 Timeline)
 
-80% - atmosphere
-Lighting/environment transforms.
+- **0.00–0.30 – MYSTERY**: Covered vehicle, darkness dominates, only V/MOTION branding is visible.
+- **0.30–0.44 – ANTICIPATION**: Lighting falls toward near‑black; minimal copy, extremely restrained.
+- **0.44–0.60 – REVEAL**: Cover visibility switch occurs under darkness; no performance copy. After the car becomes readable, introduce **McLaren Senna** quietly.
+- **0.60–0.75 – PERFORMANCE**: Highlight one main fact – `2.8 s 0–100 km/h`. Subordinate max speed `335 km/h` may appear later.
+- **0.75–0.88 – POWERTRAIN**: Focus on powertrain – primary `4.0 L twin‑turbo V8`, supporting `800 PS` and `800 Nm`. Acceleration data is removed.
+- **0.88–1.00 – OWNERSHIP / HERO**: Strip technical specs, return breathing room. Show **McLaren Senna** and a restrained call‑to‑action: *Request a private viewing →*.
 
-90% - hero reveal
-Camera pulls away.
+---
 
-100% - final composition
-Entire car visible.
+## Typographic Art Direction
 
-Final credit:
-Concept / Art Direction / 3D / Development
-B. VinoJan
+- Warm off‑white primary text, readable secondary grey.
+- Small metadata only when necessary.
+- Strong scale contrast: large numbers, smaller units.
+- Sentence case where appropriate, restrained tracking, deliberate asymmetry.
+- Avoid all‑caps wide tracking, ultra‑low opacity, equal spacing, perfect symmetry.
 
-TECHNICAL DIRECTION
-Preferred stack:
-- React
-- Three.js
-- React Three Fiber
-- Drei
-- GSAP
-- ScrollTrigger
-- WebGL
-- GLSL/shaders where visually valuable
+---
 
-CREATIVE PRIORITY
-For this experimental portfolio project:
+## Composition
 
-1. Visual impact
-2. Storytelling
-3. Interaction
-4. 3D quality
-5. Animation quality
-6. Technical experimentation
+Negative space is shaped, not leftover. Maintain a deliberate relationship between typography and visible vehicle edges, nose direction, wheel/ground line, lighting highlights, and available quiet areas. Do not cover important bodywork or headlights.
 
-Performance optimization is secondary.
+---
 
-Do not simplify an ambitious visual merely because
-it would be heavy for a normal commercial website.
+## Camera Principles
 
-However, avoid wasteful complexity that adds no visible value.
+Preserve the existing three‑beat story: **Mystery → Reveal → Hero**. No continuous orbit. During the reveal, camera motion remains restrained to give priority to the car.
 
-DO NOT TURN THIS INTO
-- ecommerce
-- normal dealership website
-- vehicle listing website
-- SaaS-style landing page
-- card-heavy UI
-- dashboard
-- generic React template
-- traditional navbar + hero + features + footer
-- fake marketing site
+---
 
-Avoid unnecessary buttons and text.
+## Lighting Principles
 
-The EXPERIENCE itself is the interface.
+Use light to **reveal** the vehicle, not to globally brighten. Prefer edge‑first illumination, then surface, then form, then hero lighting. Darkness remains an active compositional element.
 
-AGENT BEHAVIOR
-Before implementing a major change, ask:
+---
 
-"Does this make the visitor FEEL the car?"
+## Development Safety
 
-If no, reconsider it.
+1. Inspect relevant files, check git status, identify last working checkpoint.
+2. Change only the requested system.
+3. Build, verify, then proceed.
+4. Fix specific runtime errors before making broader visual changes.
 
-When choosing between a conventional web solution
-and a more memorable cinematic solution,
-prefer the cinematic solution when technically reasonable.
+---
 
-Do not add features just to demonstrate libraries.
+## Failure Lessons
 
-Every technical feature should contribute to the experience.
+- Verify asset existence against the repository.
+- Build success ≠ visual success.
+- Code inspection ≠ browser behavior.
+- Simpler visual solutions are preferable to ambitious broken ones.
 
-PORTFOLIO OBJECTIVE
+---
 
-A recruiter should not leave thinking:
+## Specialist Orchestration
 
-"VinoJan knows React."
+- **automotive-lighting-director** – lighting, darkness, reflections.
+- **cinematic-scroll-director** – scroll choreography and timing.
+- **threejs-car-specialist** – vehicle rendering and Three.js/R3F.
+- **visual-quality-auditor** – review for AI‑looking design and visual defects.
 
-The desired reaction is:
+The director coordinates these specialists without letting them redesign the same system simultaneously.
 
-"VinoJan can combine design, code, 3D, motion,
-and creative direction into something memorable."
+---
 
-FINAL PRINCIPLE
+## Final Quality Question
 
-AI is the bricklayer.
-VinoJan is the architect.
+- *Does this make the visitor feel the car more strongly?*
+- *Could we remove something and make this better?*
+- *Does this look authored, or generated?*
 
-The agent executes the vision.
-The agent does not replace the vision.
+---
+
+## Final Principle
+
+AI is the bricklayer. Vino is the architect. Technical sophistication is not the goal; a memorable, directed automotive experience is.
