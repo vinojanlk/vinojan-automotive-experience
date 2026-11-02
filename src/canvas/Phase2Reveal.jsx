@@ -45,7 +45,7 @@ export default function Phase2Reveal({ scrollProgress }) {
     }
     // Cover: visible before reveal, hidden once reveal begins
     if (coverGroup.current) {
-      coverGroup.current.visible = p < 0.45
+      coverGroup.current.visible = p < 0.44
       coverGroup.current.position.set(0, floorOffset, 0)
     }
   })
