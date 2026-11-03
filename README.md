@@ -99,7 +99,7 @@ At the final gallery, that control loosens slightly.
 
 Horizontal mouse movement produces a restrained change in viewpoint rather than rotating the vehicle itself. The Senna remains planted while the viewer appears to take a small step around it.
 
-When interaction stops, the fore returning to rest.
+When interaction stops, the studio environment makes one slow photographic movement across the bodywork before returning to rest.
 
 The intention is not to create another visible effect.
 
