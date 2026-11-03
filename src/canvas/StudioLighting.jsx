@@ -1,5 +1,6 @@
-import { useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useRef, useMemo } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIGHTING KEYFRAMES
@@ -9,19 +10,74 @@ import { useFrame } from '@react-three/fiber'
 //
 // Lights defined:
 //   ambient   — tiny fill to prevent pure black rendering artifacts
-//   stripTop  — overhead strip reveals form through fabric/cover folds
+//   stripTop  — overhead strip reveals form through fabric/cover folds & roofline
 //   keyFront  — primary key light for the front of the car
 //   fillSide  — soft fill on the driver/passenger side
 //   rimBack   — rear rim light for silhouette and depth
+//   envScale  — reveal-scale curve for controlled darkness during cloth->car swap
 //
-// Extend these curves as new scenes are added.
+// POWER ("HELD FORCE") plateau at 0.78–0.88:
+//   stripTop ≈ 1.10, keyFront ≈ 2.00, fillSide ≈ 0.35, rimBack ≈ 0.80
 // ─────────────────────────────────────────────────────────────────────────────
+const ENV_BASE = 0.8
+
 const CURVES = {
-  ambient:  [{ p: 0.00, v: 0.03 }, { p: 1.00, v: 0.08 }],
-  stripTop: [{ p: 0.00, v: 0.00 }, { p: 0.05, v: 0.12 }, { p: 0.12, v: 0.35 }, { p: 0.20, v: 0.55 }, { p: 0.30, v: 0.20 }, { p: 0.40, v: 0.02 }, { p: 0.44, v: 0.02 }, { p: 0.47, v: 0.20 }, { p: 0.52, v: 0.35 }, { p: 0.60, v: 0.80 }, { p: 0.80, v: 1.20 }, { p: 1.00, v: 1.00 }],
-  keyFront: [{ p: 0.00, v: 0.00 }, { p: 0.50, v: 0.00 }, { p: 0.65, v: 1.80 }, { p: 0.85, v: 2.20 }, { p: 1.00, v: 2.50 }],
-  fillSide: [{ p: 0.00, v: 0.00 }, { p: 0.65, v: 0.00 }, { p: 0.80, v: 1.00 }, { p: 1.00, v: 1.20 }],
-  rimBack:  [{ p: 0.00, v: 0.00 }, { p: 0.75, v: 0.00 }, { p: 0.90, v: 1.20 }, { p: 1.00, v: 1.00 }],
+  envScale: [
+    { p: 0.00, v: 1.00 },
+    { p: 0.34, v: 1.00 },
+    { p: 0.42, v: 0.03 },
+    { p: 0.46, v: 0.03 },
+    { p: 0.52, v: 0.25 },
+    { p: 0.58, v: 1.00 },
+    { p: 1.00, v: 1.00 },
+  ],
+  ambient:  [
+    { p: 0.00, v: 0.03 },
+    { p: 1.00, v: 0.08 },
+  ],
+  stripTop: [
+    { p: 0.00, v: 0.00 },
+    { p: 0.05, v: 0.12 },
+    { p: 0.12, v: 0.35 },
+    { p: 0.20, v: 0.55 },
+    { p: 0.30, v: 0.20 },
+    { p: 0.40, v: 0.02 },
+    { p: 0.44, v: 0.02 },
+    { p: 0.47, v: 0.20 },
+    { p: 0.52, v: 0.35 },
+    { p: 0.60, v: 0.80 },
+    { p: 0.72, v: 1.04 },
+    { p: 0.75, v: 1.10 },
+    { p: 0.78, v: 1.10 }, // POWER plateau begin
+    { p: 0.88, v: 1.10 }, // POWER plateau end
+    { p: 1.00, v: 1.00 },
+  ],
+  keyFront: [
+    { p: 0.00, v: 0.00 },
+    { p: 0.50, v: 0.00 },
+    { p: 0.65, v: 1.80 },
+    { p: 0.72, v: 1.94 },
+    { p: 0.75, v: 2.00 },
+    { p: 0.78, v: 2.00 }, // POWER plateau begin
+    { p: 0.88, v: 2.00 }, // POWER plateau end
+    { p: 1.00, v: 2.50 },
+  ],
+  fillSide: [
+    { p: 0.00, v: 0.00 },
+    { p: 0.65, v: 0.00 },
+    { p: 0.72, v: 0.4667 },
+    { p: 0.75, v: 0.6667 },
+    { p: 0.78, v: 0.35 }, // POWER plateau begin (deep directional shadow)
+    { p: 0.88, v: 0.35 }, // POWER plateau end
+    { p: 1.00, v: 1.20 },
+  ],
+  rimBack:  [
+    { p: 0.00, v: 0.00 },
+    { p: 0.75, v: 0.00 },
+    { p: 0.78, v: 0.80 }, // POWER plateau begin (rear silhouette separation)
+    { p: 0.88, v: 0.80 }, // POWER plateau end
+    { p: 1.00, v: 1.00 },
+  ],
 }
 
 function sample(curve, progress) {
@@ -48,25 +104,77 @@ function sample(curve, progress) {
  * automotive-lighting-director principle:
  *   Darkness is part of the composition.
  *   Light reveals the vehicle — it does not simply illuminate everything.
+ *
+ * Acceleration Cue (0.60–0.75):
+ *   A single narrow highlight travels smoothly across the car body once,
+ *   reinforcing forward intent and articulating the aerodynamic silhouette.
+ *
+ * POWER Cue (0.78–0.88):
+ *   Stable sculptural lighting plateau with deep directional shadow and rear silhouette separation.
  */
 export default function StudioLighting({ scrollProgress }) {
-  const ambientRef  = useRef()
-  const stripRef    = useRef()
-  const keyRef      = useRef()
-  const fillRef     = useRef()
-  const rimRef      = useRef()
+  const { scene } = useThree()
+  const ambientRef        = useRef()
+  const stripRef          = useRef()
+  const keyRef            = useRef()
+  const fillRef           = useRef()
+  const rimRef            = useRef()
+  const accelHighlightRef = useRef()
+
+  // Dedicated stationary/tracking target for the acceleration spotlight
+  const accelTarget = useMemo(() => new THREE.Object3D(), [])
 
   useFrame(() => {
     const p = scrollProgress.current
+    if (scene) scene.environmentIntensity = ENV_BASE * sample(CURVES.envScale, p)
     if (ambientRef.current)  ambientRef.current.intensity = sample(CURVES.ambient,  p)
     if (stripRef.current)    stripRef.current.intensity   = sample(CURVES.stripTop, p)
     if (keyRef.current)      keyRef.current.intensity     = sample(CURVES.keyFront, p)
     if (fillRef.current)     fillRef.current.intensity    = sample(CURVES.fillSide, p)
     if (rimRef.current)      rimRef.current.intensity     = sample(CURVES.rimBack,  p)
+
+    // Body highlight travel: single pass strictly during 0.60–0.75 (UNCHANGED)
+    if (accelHighlightRef.current) {
+      if (p >= 0.595 && p <= 0.755) {
+        accelHighlightRef.current.visible = true
+
+        const t = Math.max(0, Math.min(1, (p - 0.60) / 0.15))
+        // Smootherstep S-curve for progressive movement
+        const ease = t * t * t * (t * (t * 6 - 15) + 10)
+
+        // Travel along car flank and roofline from front (+0.5) to rear (-5.5)
+        const lx = 1.7 + (1.0 - 1.7) * ease
+        const ly = 2.6 + (2.1 - 2.6) * ease
+        const lz = 0.5 + (-5.5 - 0.5) * ease
+        accelHighlightRef.current.position.set(lx, ly, lz)
+
+        // Target tracks along the vehicle body
+        const tz = -1.2 + (-4.2 - (-1.2)) * ease
+        accelTarget.position.set(0.15, 0.65, tz)
+        accelTarget.updateMatrixWorld()
+
+        // Intensity envelope: rise, hold, resolve, stop
+        let intensity = 0
+        if (p >= 0.60 && p < 0.64) {
+          intensity = 2.2 * ((p - 0.60) / 0.04)
+        } else if (p >= 0.64 && p <= 0.70) {
+          intensity = 2.2
+        } else if (p > 0.70 && p <= 0.75) {
+          intensity = 2.2 * Math.max(0, 1 - (p - 0.70) / 0.05)
+        }
+        accelHighlightRef.current.intensity = intensity
+      } else {
+        accelHighlightRef.current.visible = false
+        accelHighlightRef.current.intensity = 0
+      }
+    }
   })
 
   return (
     <>
+      {/* Target object for acceleration traveling spotlight */}
+      <primitive object={accelTarget} />
+
       {/* Ambient — prevents WebGL black-artefact on unlit faces */}
       <ambientLight
         ref={ambientRef}
@@ -122,6 +230,21 @@ export default function StudioLighting({ scrollProgress }) {
         distance={22}
         decay={2}
         castShadow={false}
+      />
+
+      {/* Acceleration traveling highlight — narrow, controlled body sweep (0.60–0.75) */}
+      <spotLight
+        ref={accelHighlightRef}
+        target={accelTarget}
+        color="#f4f8fc"
+        intensity={0}
+        position={[1.7, 2.6, 0.5]}
+        angle={0.28}
+        penumbra={0.85}
+        distance={16}
+        decay={2}
+        castShadow={false}
+        visible={false}
       />
     </>
   )
