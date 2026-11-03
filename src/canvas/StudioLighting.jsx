@@ -95,6 +95,13 @@ function sample(curve, progress) {
   return from.v + (to.v - from.v) * t
 }
 
+// Autonomous studio-environment YAW excursion constants
+const MAX_YAW_RAD = (3.0 * Math.PI) / 180
+const DURATION_OUT = 12.0
+const DURATION_HOLD = 5.0
+const DURATION_RETURN = 12.0
+const IDLE_WAIT_REQUIRED = 3.0
+
 /**
  * StudioLighting
  *
@@ -111,8 +118,11 @@ function sample(curve, progress) {
  *
  * POWER Cue (0.78–0.88):
  *   Stable sculptural lighting plateau with deep directional shadow and rear silhouette separation.
+ *
+ * Autonomous Studio Light Excursion (p >= 0.995):
+ *   One slow, photographic environment YAW excursion during settled idle.
  */
-export default function StudioLighting({ scrollProgress }) {
+export default function StudioLighting({ scrollProgress, interactionRef }) {
   const { scene } = useThree()
   const ambientRef        = useRef()
   const stripRef          = useRef()
@@ -124,7 +134,15 @@ export default function StudioLighting({ scrollProgress }) {
   // Dedicated stationary/tracking target for the acceleration spotlight
   const accelTarget = useMemo(() => new THREE.Object3D(), [])
 
-  useFrame(() => {
+  // Autonomous studio-environment YAW state machine (refs only, no React state)
+  const lightMotionRef = useRef({
+    phase: 'WAIT', // 'WAIT' | 'OUT' | 'HOLD' | 'RETURN' | 'DONE'
+    phaseTime: 0,
+    idleTimer: 0,
+    currentOffset: 0,
+  })
+
+  useFrame((state, delta) => {
     const p = scrollProgress.current
     if (scene) scene.environmentIntensity = ENV_BASE * sample(CURVES.envScale, p)
     if (ambientRef.current)  ambientRef.current.intensity = sample(CURVES.ambient,  p)
@@ -132,6 +150,81 @@ export default function StudioLighting({ scrollProgress }) {
     if (keyRef.current)      keyRef.current.intensity     = sample(CURVES.keyFront, p)
     if (fillRef.current)     fillRef.current.intensity    = sample(CURVES.fillSide, p)
     if (rimRef.current)      rimRef.current.intensity     = sample(CURVES.rimBack,  p)
+
+    // Autonomous studio-environment YAW excursion
+    const dt = Math.min(delta, 0.1)
+    const lm = lightMotionRef.current
+    const inter = interactionRef?.current
+
+    if (p < 0.98) {
+      // Reversing below hero: return offset smoothly to baseline, reset phase
+      if (lm.currentOffset > 0) {
+        lm.currentOffset += (0 - lm.currentOffset) * (1 - Math.exp(-6 * dt))
+        if (lm.currentOffset < 1e-4) lm.currentOffset = 0
+      }
+      lm.phase = 'WAIT'
+      lm.phaseTime = 0
+      lm.idleTimer = 0
+    } else if (p >= 0.995) {
+      const isEligible = inter && inter.hasMouse && !inter.reducedMotion && inter.isValid
+      const isMoving = inter && inter.isActive
+
+      if (!isEligible) {
+        // Reduced motion or invalid focus/mouse: pause or damp to baseline
+        if (inter?.reducedMotion && lm.currentOffset > 0) {
+          lm.currentOffset += (0 - lm.currentOffset) * (1 - Math.exp(-6 * dt))
+          if (lm.currentOffset < 1e-4) lm.currentOffset = 0
+        }
+      } else if (isMoving) {
+        // Viewer actively moving mouse: pause light excursion without snapping
+        lm.idleTimer = 0
+      } else {
+        // Viewer is idle
+        if (lm.phase === 'WAIT') {
+          lm.idleTimer += dt
+          if (lm.idleTimer >= IDLE_WAIT_REQUIRED) {
+            lm.phase = 'OUT'
+            lm.phaseTime = 0
+          }
+        } else if (lm.phase === 'OUT') {
+          lm.phaseTime += dt
+          const t = Math.min(1, lm.phaseTime / DURATION_OUT)
+          const ease = t * t * (3 - 2 * t)
+          lm.currentOffset = ease * MAX_YAW_RAD
+          if (lm.phaseTime >= DURATION_OUT) {
+            lm.phase = 'HOLD'
+            lm.phaseTime = 0
+            lm.currentOffset = MAX_YAW_RAD
+          }
+        } else if (lm.phase === 'HOLD') {
+          lm.phaseTime += dt
+          lm.currentOffset = MAX_YAW_RAD
+          if (lm.phaseTime >= DURATION_HOLD) {
+            lm.phase = 'RETURN'
+            lm.phaseTime = 0
+          }
+        } else if (lm.phase === 'RETURN') {
+          lm.phaseTime += dt
+          const t = Math.min(1, lm.phaseTime / DURATION_RETURN)
+          const ease = t * t * (3 - 2 * t)
+          lm.currentOffset = (1 - ease) * MAX_YAW_RAD
+          if (lm.phaseTime >= DURATION_RETURN) {
+            lm.phase = 'DONE'
+            lm.phaseTime = 0
+            lm.currentOffset = 0
+          }
+        } else if (lm.phase === 'DONE') {
+          lm.currentOffset = 0
+        }
+      }
+    }
+
+    if (scene) {
+      if (!scene.environmentRotation) {
+        scene.environmentRotation = new THREE.Euler()
+      }
+      scene.environmentRotation.set(0, lm.currentOffset, 0)
+    }
 
     // Body highlight travel: single pass strictly during 0.60–0.75 (UNCHANGED)
     if (accelHighlightRef.current) {

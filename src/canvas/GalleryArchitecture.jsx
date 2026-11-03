@@ -107,6 +107,7 @@ export default function GalleryArchitecture({ scrollProgress }) {
       color: new THREE.Color(0, 0, 0),
       fog: true,
       depthWrite: true,
+      vertexColors: true,
     })
 
     darkMatRef.current   = dark
@@ -116,6 +117,33 @@ export default function GalleryArchitecture({ scrollProgress }) {
 
     return { dark, warm, jamb, recess }
   }, [BASE_DARK, BASE_WARM, BASE_JAMB])
+
+  // Geometries: recess diffusers receive bottom-to-top vertex colors (1.0 at base -> 0.15 at top)
+  const geometries = useMemo(() => {
+    const map = new Map()
+    PANELS.forEach((p) => {
+      const geom = new THREE.BoxGeometry(p.w, p.h, p.d)
+      if (p.mat === 'recess') {
+        const pos = geom.attributes.position
+        const count = pos.count
+        const colors = new Float32Array(count * 3)
+        const halfH = p.h / 2
+        for (let i = 0; i < count; i++) {
+          const y = pos.getY(i)
+          // Local y: bottom (-halfH) -> 0.0, top (+halfH) -> 1.0
+          const t = Math.max(0, Math.min(1, (y + halfH) / p.h))
+          // Multiplier: 1.0 at bottom (approved max luminance), 0.15 at top (falloff into darkness)
+          const mult = 1.0 - t * 0.85
+          colors[i * 3 + 0] = mult
+          colors[i * 3 + 1] = mult
+          colors[i * 3 + 2] = mult
+        }
+        geom.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      }
+      map.set(p.id, geom)
+    })
+    return map
+  }, [])
 
   // Smoothstep utility
   const smoothstep = (min, max, val) => {
@@ -199,11 +227,10 @@ export default function GalleryArchitecture({ scrollProgress }) {
           <mesh
             key={p.id}
             position={[p.x, p.y, p.z]}
+            geometry={geometries.get(p.id)}
             material={mat}
             receiveShadow={false}
-          >
-            <boxGeometry args={[p.w, p.h, p.d]} />
-          </mesh>
+          />
         )
       })}
     </group>
