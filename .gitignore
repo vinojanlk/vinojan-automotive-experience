@@ -1,3 +1,31 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Local AI / agent tooling
+.agents/
+
+# Vite cache
+.vite/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
 
 # Blender source files
 *.blend
