@@ -6,7 +6,6 @@ VINOJAN is a browser-based automotive experience exploring how a performance car
 
 The project uses the **McLaren Senna** as its visual subject and moves through mystery, reveal, performance and a final interactive gallery experience.
 
-<!-- Replace this with the final hero GIF -->
 ![VINOJAN Automotive Experience](docs/vinojan-hero.gif)
 
 ---
