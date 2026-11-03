@@ -222,7 +222,7 @@ public/
 
 **VINOJAN**
 
-Colombo, Sri Lanka
+Jaffna, Sri Lanka
 
 Independent automotive experience study.
 
