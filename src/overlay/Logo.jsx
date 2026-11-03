@@ -4,15 +4,16 @@ import gsap from 'gsap'
 /**
  * Logo
  *
- * V/MOTION brand identity — the secondary character of the experience.
+ * VINOJAN brand identity — opening signature.
  *
  * Motion system (scroll-driven, via rAF + GSAP.set):
  *
- *   0–5%    Fade in from black. Centered. Full scale. The opening identity.
+ *   0–5%    Fade in from black. Centered. Full scale. Opening identity.
  *   5–12%   Hold. Logo owns the screen alongside the darkness.
- *   12–30%  Migrate to top-left corner. Scale down. Becomes a presence, not a subject.
- *   30–60%  Settled top-left. Subtle. Car is the subject.
- *   60–100% Gradual fade — steps back further as the reveal and exploration begin.
+ *   12–30%  Migrate to top-left corner. Scale down.
+ *   30–36%  Settled corner presence.
+ *   36–42%  Fade out completely before the vehicle reveal.
+ *   42–100% Fully hidden (opacity: 0, visibility: hidden). Vehicle owns the frame.
  *
  * Driven entirely by rAF + gsap.set (no React state).
  * Zero re-renders. Zero scroll event listeners in React.
@@ -20,7 +21,6 @@ import gsap from 'gsap'
  * Visual language:
  *   - Space Grotesk 300 — refined, not heavy
  *   - Letter-spacing 0.3em — premium automotive feeling
- *   - "/" in a slightly dimmer tone — typographic detail
  *   - Thin horizontal rule beneath — compositional breath
  */
 export default function Logo({ scrollProgress }) {
@@ -54,10 +54,10 @@ export default function Logo({ scrollProgress }) {
     window.addEventListener('resize', onResize)
 
     // Start off-screen invisible
-    gsap.set(el, { x: positions.cx, y: positions.cy, opacity: 0, scale: 1 })
+    gsap.set(el, { x: positions.cx, y: positions.cy, opacity: 0, scale: 1, visibility: 'visible' })
 
     function animate() {
-      const p = scrollProgress.current
+      const p = scrollProgress.current ?? 0
       const { cx, cy, kx, ky } = positions
 
       let opacity, scale, x, y
@@ -83,22 +83,34 @@ export default function Logo({ scrollProgress }) {
         scale      = 1 - ease * 0.60
         x          = cx + (kx - cx) * ease
         y          = cy + (ky - cy) * ease
-      } else if (p < 0.60) {
+      } else if (p < 0.36) {
         // Settled corner presence
         opacity = 0.65
         scale   = 0.40
         x       = kx
         y       = ky
+      } else if (p < 0.42) {
+        // Smooth fade out into blackout / car reveal
+        const t = (p - 0.36) / 0.06
+        opacity = 0.65 * (1 - t)
+        scale   = 0.40
+        x       = kx
+        y       = ky
       } else {
-        // Fade further as the reveal journey deepens
-        const t = (p - 0.60) / 0.40
-        opacity = 0.65 - t * 0.45
+        // Complete exit — vehicle reveal owns the frame
+        opacity = 0
         scale   = 0.40
         x       = kx
         y       = ky
       }
 
-      gsap.set(el, { x, y, opacity, scale })
+      gsap.set(el, {
+        x,
+        y,
+        opacity,
+        scale,
+        visibility: p < 0.42 ? 'visible' : 'hidden',
+      })
       rafRef.current = requestAnimationFrame(animate)
     }
 
@@ -136,11 +148,7 @@ export default function Logo({ scrollProgress }) {
           whiteSpace: 'nowrap',
         }}
       >
-        V
-        <span style={{ color: '#666666', fontWeight: 300, letterSpacing: 0 }}>
-          /
-        </span>
-        MOTION
+        VINOJAN
       </h1>
 
       {/* Fine rule — compositional breath beneath the wordmark */}

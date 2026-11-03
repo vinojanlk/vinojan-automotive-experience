@@ -16,16 +16,20 @@ import { useEffect, useRef } from 'react'
  *   0.00–0.54 : SILENCE (Logo & vehicle mystery/anticipation/reveal have visual priority)
  *   0.54–0.60 : IDENTITY ("McLaren Senna" - restrained editorial introduction)
  *   0.60–0.75 : PERFORMANCE (Hero: "2.8 s" + "0–100 km/h", subordinate secondary "335 km/h")
- *   0.75–0.88 : POWERTRAIN (Primary: "4.0 L twin-turbo V8", supporting pair: "800 PS Power · 800 Nm Torque")
+ *   0.75–0.78 : SILENCE / ARRIVAL (Camera settles into POWER pose, lighting transitions)
+ *   0.78–0.88 : POWER ("HELD FORCE" – 800 PS dominant, 800 Nm echo, 4.0 L twin-turbo V8 source)
  *   0.88–1.00 : OWNERSHIP (Quiet hero: "McLaren Senna", "Request a viewing ↗", "V/MOTION COLOMBO, SRI LANKA")
  *
  * Zero React re-renders on scroll; driven strictly via rAF and direct DOM style updates.
  */
 export default function VehicleStory({ scrollProgress }) {
-  const identityRef = useRef()
+  const identityRef    = useRef()
   const performanceRef = useRef()
-  const powertrainRef = useRef()
-  const ownershipRef = useRef()
+  const powertrainRef  = useRef()
+  const psRef          = useRef()
+  const nmRef          = useRef()
+  const engineRef      = useRef()
+  const ownershipRef   = useRef()
 
   useEffect(() => {
     let rafId
@@ -39,7 +43,7 @@ export default function VehicleStory({ scrollProgress }) {
     const update = () => {
       const p = scrollProgress.current ?? 0
 
-      // Helper for clean editorial entry & exit with subtle 8-16px translateY
+      // Helper for clean editorial entry & exit with subtle 8-16px translateY (for Identity, Performance, Ownership)
       const applyTransition = (el, enterStart, enterEnd, exitStart, exitEnd, maxTranslate = 14) => {
         if (!el) return
 
@@ -67,15 +71,12 @@ export default function VehicleStory({ scrollProgress }) {
         el.style.visibility = opacity <= 0.001 ? 'hidden' : 'visible'
       }
 
-      // ── 01. IDENTITY (0.54 – 0.60) ──
-      // Enters after reveal silence. Leaves as Performance takes over.
+      // ── 01. IDENTITY (0.54 – 0.60) ── (UNCHANGED)
       applyTransition(identityRef.current, 0.54, 0.56, 0.585, 0.605)
 
-      // ── 02. PERFORMANCE (0.60 – 0.75) ──
-      // Hero: 2.8 s. Secondary: 335 km/h fades in smoothly later in the beat (~0.67+).
+      // ── 02. PERFORMANCE (0.60 – 0.75) ── (UNCHANGED)
       applyTransition(performanceRef.current, 0.605, 0.63, 0.725, 0.75)
 
-      // Subordinate secondary element inside performance
       if (performanceRef.current) {
         const sec = performanceRef.current.querySelector('.perf-secondary')
         if (sec) {
@@ -88,12 +89,69 @@ export default function VehicleStory({ scrollProgress }) {
         }
       }
 
-      // ── 03. POWERTRAIN (0.75 – 0.88) ──
-      // Primary: 4.0 L twin-turbo V8. Supporting: 800 PS / 800 Nm.
-      applyTransition(powertrainRef.current, 0.75, 0.775, 0.855, 0.88)
+      // ── 03. POWER: "HELD FORCE" (0.78 – 0.88) ──
+      // Pure opacity only – completely stationary.
+      // 0.75–0.78: No text. Camera settles, lighting transitions.
+      // 0.78–0.795: 800 PS fades in.
+      // 0.795–0.810: 800 Nm fades in.
+      // 0.810–0.825: 4.0 L twin-turbo V8 fades in.
+      // 0.825–0.845: FULL COMPOSITION HOLD.
+      // 0.845–0.855: engine caption fades out.
+      // 0.855–0.865: 800 Nm fades out.
+      // 0.865–0.880: 800 PS fades out.
+      // 0.88: POWER typography completely gone.
 
-      // ── 04. OWNERSHIP (0.88 – 1.00) ──
-      // Quiet, confident closing composition.
+      let op800PS = 0
+      if (p >= 0.78 && p <= 0.88) {
+        if (p < 0.795) {
+          op800PS = smoothstep(0.78, 0.795, p)
+        } else if (p <= 0.865) {
+          op800PS = 1
+        } else {
+          op800PS = 1 - smoothstep(0.865, 0.880, p)
+        }
+      }
+
+      let op800Nm = 0
+      if (p >= 0.795 && p <= 0.865) {
+        if (p < 0.810) {
+          op800Nm = smoothstep(0.795, 0.810, p)
+        } else if (p <= 0.855) {
+          op800Nm = 1
+        } else {
+          op800Nm = 1 - smoothstep(0.855, 0.865, p)
+        }
+      }
+
+      let opEngine = 0
+      if (p >= 0.810 && p <= 0.855) {
+        if (p < 0.825) {
+          opEngine = smoothstep(0.810, 0.825, p)
+        } else if (p <= 0.845) {
+          opEngine = 1
+        } else {
+          opEngine = 1 - smoothstep(0.845, 0.855, p)
+        }
+      }
+
+      if (psRef.current) {
+        psRef.current.style.opacity = op800PS.toFixed(4)
+        psRef.current.style.visibility = op800PS <= 0.001 ? 'hidden' : 'visible'
+      }
+      if (nmRef.current) {
+        nmRef.current.style.opacity = op800Nm.toFixed(4)
+        nmRef.current.style.visibility = op800Nm <= 0.001 ? 'hidden' : 'visible'
+      }
+      if (engineRef.current) {
+        engineRef.current.style.opacity = opEngine.toFixed(4)
+        engineRef.current.style.visibility = opEngine <= 0.001 ? 'hidden' : 'visible'
+      }
+      if (powertrainRef.current) {
+        const anyVisible = op800PS > 0.001 || op800Nm > 0.001 || opEngine > 0.001
+        powertrainRef.current.style.visibility = anyVisible ? 'visible' : 'hidden'
+      }
+
+      // ── 04. OWNERSHIP (0.88 – 1.00) ── (UNCHANGED)
       applyTransition(ownershipRef.current, 0.88, 0.915, 1.00, 1.05)
 
       rafId = requestAnimationFrame(update)
@@ -120,7 +178,6 @@ export default function VehicleStory({ scrollProgress }) {
       {/* ──────────────────────────────────────────────────────────
           BEAT 01: IDENTITY (p = 0.54 – 0.60)
           Positioned in genuine negative space on the left.
-          44px reference size at 1440x900, warm off-white, tight tracking.
       ────────────────────────────────────────────────────────── */}
       <div
         ref={identityRef}
@@ -136,7 +193,7 @@ export default function VehicleStory({ scrollProgress }) {
         <h2
           style={{
             margin: 0,
-            fontSize: 'clamp(2.2rem, 3.1vw, 2.75rem)', // ~44px at 1440w
+            fontSize: 'clamp(2.2rem, 3.1vw, 2.75rem)',
             fontWeight: 400,
             color: '#F1EFEA',
             letterSpacing: '-0.025em',
@@ -236,105 +293,105 @@ export default function VehicleStory({ scrollProgress }) {
       </div>
 
       {/* ──────────────────────────────────────────────────────────
-          BEAT 03: POWERTRAIN (p = 0.75 – 0.88)
-          Primary: "4.0 L twin-turbo V8"
-          Supporting: "800 PS Power · 800 Nm Torque" (supporting pair)
+          BEAT 03: POWER ("HELD FORCE") (p = 0.78 – 0.88)
+          800 PS (dominant statement)
+          800 Nm (smaller echo beneath)
+          4.0 L twin-turbo V8 (quiet mechanical-source caption)
+          Stationary – pure opacity only.
       ────────────────────────────────────────────────────────── */}
       <div
         ref={powertrainRef}
         style={{
           position: 'absolute',
-          top: '35%',
+          top: '34%',
           left: 'clamp(3rem, 7.5vw, 10rem)',
-          opacity: 0,
           visibility: 'hidden',
-          willChange: 'transform, opacity',
+          willChange: 'opacity',
         }}
       >
-        {/* Primary headline */}
-        <div>
-          <div
-            style={{
-              fontSize: 'clamp(3.2rem, 4.8vw, 4.2rem)',
-              fontWeight: 400,
-              color: '#F1EFEA',
-              letterSpacing: '-0.03em',
-              lineHeight: 0.95,
-            }}
-          >
-            4.0 L
-          </div>
-          <div
-            style={{
-              marginTop: '0.5rem',
-              fontSize: 'clamp(1.1rem, 1.4vw, 1.35rem)',
-              fontWeight: 300,
-              color: '#C4C1BB',
-              letterSpacing: '0.01em',
-            }}
-          >
-            twin-turbo V8
-          </div>
-        </div>
-
-        {/* Supporting facts pair */}
+        {/* 800 PS — Dominant POWER statement */}
         <div
+          ref={psRef}
           style={{
             display: 'flex',
-            alignItems: 'flex-start',
-            gap: 'clamp(2rem, 4vw, 3.5rem)',
-            marginTop: '2.8rem',
+            alignItems: 'baseline',
+            gap: '0.45rem',
+            opacity: 0,
+            willChange: 'opacity',
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: 'clamp(1.35rem, 1.8vw, 1.65rem)',
-                fontWeight: 400,
-                color: '#F1EFEA',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.1,
-              }}
-            >
-              800 PS
-            </div>
-            <div
-              style={{
-                marginTop: '0.25rem',
-                fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)',
-                fontWeight: 400,
-                color: '#99968F',
-                letterSpacing: '0.03em',
-              }}
-            >
-              Power
-            </div>
-          </div>
+          <span
+            style={{
+              fontSize: 'clamp(5.2rem, 7.4vw, 6.6rem)',
+              fontWeight: 400,
+              color: '#F1EFEA',
+              letterSpacing: '-0.035em',
+              lineHeight: 0.92,
+            }}
+          >
+            800
+          </span>
+          <span
+            style={{
+              fontSize: 'clamp(1.6rem, 2.3vw, 2.1rem)',
+              fontWeight: 300,
+              color: '#C4C1BB',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            PS
+          </span>
+        </div>
 
-          <div>
-            <div
-              style={{
-                fontSize: 'clamp(1.35rem, 1.8vw, 1.65rem)',
-                fontWeight: 400,
-                color: '#F1EFEA',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.1,
-              }}
-            >
-              800 Nm
-            </div>
-            <div
-              style={{
-                marginTop: '0.25rem',
-                fontSize: 'clamp(0.75rem, 0.9vw, 0.85rem)',
-                fontWeight: 400,
-                color: '#99968F',
-                letterSpacing: '0.03em',
-              }}
-            >
-              Torque
-            </div>
-          </div>
+        {/* 800 Nm — Substantially smaller echo beneath */}
+        <div
+          ref={nmRef}
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '0.35rem',
+            marginTop: '1.25rem',
+            opacity: 0,
+            willChange: 'opacity',
+          }}
+        >
+          <span
+            style={{
+              fontSize: 'clamp(2.2rem, 3.2vw, 2.85rem)',
+              fontWeight: 400,
+              color: '#F1EFEA',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.0,
+            }}
+          >
+            800
+          </span>
+          <span
+            style={{
+              fontSize: 'clamp(1.1rem, 1.4vw, 1.3rem)',
+              fontWeight: 300,
+              color: '#C4C1BB',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Nm
+          </span>
+        </div>
+
+        {/* 4.0 L twin-turbo V8 — Quiet mechanical-source caption */}
+        <div
+          ref={engineRef}
+          style={{
+            marginTop: '2.2rem',
+            fontSize: 'clamp(0.95rem, 1.2vw, 1.15rem)',
+            fontWeight: 400,
+            color: '#99968F',
+            letterSpacing: '0.04em',
+            opacity: 0,
+            willChange: 'opacity',
+          }}
+        >
+          4.0 L twin-turbo V8
         </div>
       </div>
 
@@ -397,7 +454,7 @@ export default function VehicleStory({ scrollProgress }) {
             lineHeight: 1.45,
           }}
         >
-          <div>V/MOTION</div>
+          <div>VINOJAN</div>
           <div style={{ color: 'rgba(153, 150, 143, 0.75)' }}>Colombo, Sri Lanka</div>
         </div>
       </div>
