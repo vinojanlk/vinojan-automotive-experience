@@ -5,6 +5,7 @@ import StudioEnvironment from './StudioEnvironment'
 import StudioLighting from './StudioLighting'
 import SignatureCamera from './SignatureCamera'
 import Phase2Reveal from './Phase2Reveal'
+import GalleryArchitecture from './GalleryArchitecture'
 import PostEffects from './PostEffects'
 
 /**
@@ -37,8 +38,11 @@ export default function SceneCanvas({ scrollProgress }) {
         {/* Camera locked during reveal – controlled by SignatureCamera */}
         <SignatureCamera scrollProgress={scrollProgress} />
 
-        {/* Studio: dark floor with subtle reflection, atmospheric fog */}
+        {/* Studio: dark floor with subtle reflection, atmospheric fog & grounding */}
         <StudioEnvironment />
+
+        {/* Midnight gallery architecture – emerges after reveal */}
+        <GalleryArchitecture scrollProgress={scrollProgress} />
 
         {/* Lighting rig — all intensities start near-zero, animate with scroll */}
         <StudioLighting scrollProgress={scrollProgress} />
